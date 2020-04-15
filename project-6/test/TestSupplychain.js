@@ -37,15 +37,27 @@ contract('SupplyChain', function(accounts) {
     console.log("Farmer: accounts[1] ", accounts[1])
     console.log("Processor: accounts[2] ", accounts[2])
     console.log("Distributor: accounts[3] ", accounts[3])
-    console.log("Retailer: accounts[4] ", accounts[4])
-    console.log("Consumer: accounts[5] ", accounts[5])
+    console.log("Grader: accounts[4] ", accounts[4])
+    console.log("Retailer: accounts[5] ", accounts[5])
+    console.log("Consumer: accounts[6] ", accounts[6])
+
+    //Assign roles
+    async function addRoles(supplyChain) {
+        supplyChain.addFarmer(originFarmerID);
+        supplyChain.addProcessor(processorID);
+        supplyChain.addDistributor(distributorID);
+        supplyChain.addGrader(graderID);
+        supplyChain.addRetailer(retailerID);
+        supplyChain.addConsumer(consumerID);
+    }
 
     // 1st Test
     it("Testing smart contract function raiseCow() that allows a farmer to raise a cow", async() => {
         const supplyChain = await SupplyChain.deployed()
+        await addRoles(supplyChain);
 
         // Mark a cow as Raised by calling function raiseCow()
-        var result = await supplyChain.raiseCow(cowID, originFarmerID, originFarmName)
+        var result = await supplyChain.raiseCow(cowID, originFarmName, {from: originFarmerID})
 
         // Retrieve the just now saved item from blockchain by calling function fetchItem()
         const resultBufferOne = await supplyChain.fetchItemBufferOne.call(cowID)
@@ -57,7 +69,7 @@ contract('SupplyChain', function(accounts) {
         assert.equal(resultBufferOne[2], originFarmerID, 'Error: Missing or Invalid originFarmerID')
         assert.equal(resultBufferOne[3], originFarmName, 'Error: Missing or Invalid originFarmName')
         assert.equal(resultBufferTwo[3], 1, 'Error: Invalid item State')
-        truffleAssert.eventEmitted(result, 'Raised');     
+        truffleAssert.eventEmitted(result, 'Raised');
     })    
 
     // 2nd Test

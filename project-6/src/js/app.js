@@ -105,10 +105,24 @@ App = {
             App.fetchItemBufferTwo();
             App.fetchEvents();
 
+            // Use the code below to test assigned roles
+            // App.addRoles();
+
         });
 
         return App.bindEvents();
     },
+
+    // addRoles: function() {
+    //     App.contracts.SupplyChain.deployed().then(function(instance) {
+    //         instance.addFarmer("0x018c2dabef4904ecbd7118350a0c54dbeae3549a");
+    //         instance.addProcessor("0xce5144391b4ab80668965f2cc4f2cc102380ef0a");
+    //         instance.addDistributor("0x460c31107dd048e34971e57da2f99f659add4f02");
+    //         instance.addGrader("0xd37b7b8c62be2fdde8daa9816483aebdbd356088");
+    //         instance.addRetailer("0x27f184bdc0e7a931b507ddd689d76dba10514bcb");
+    //         instance.addConsumer("0xfe0df793060c49edca5ac9c104dd8e3375349978");
+    //     });
+    // },
 
     bindEvents: function() {
         $(document).on('click', App.handleButtonClick);
@@ -170,8 +184,8 @@ App = {
         App.contracts.SupplyChain.deployed().then(function(instance) {
             return instance.raiseCow(
                 App.cowID, 
-                App.metamaskAccountID, 
                 App.originFarmName, 
+                {from: App.metamaskAccountID}
             );
         }).then(function(result) {
             //$("#ftc-item").text(result);

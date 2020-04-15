@@ -21,7 +21,7 @@ contract ProcessorRole {
 
   // Define a modifier that checks to see if msg.sender has the appropriate role
   modifier onlyProcessor() {
-    require(isProcessor(msg.sender));
+    require(isProcessor(msg.sender), "Not processor");
     _;
   }
 

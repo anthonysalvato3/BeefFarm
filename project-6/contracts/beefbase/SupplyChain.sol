@@ -1,6 +1,15 @@
 pragma solidity >=0.4.24;
+
+import '../beefcore/Ownable.sol';
+import '../beefaccesscontrol/FarmerRole.sol';
+import '../beefaccesscontrol/ProcessorRole.sol';
+import '../beefaccesscontrol/GraderRole.sol';
+import '../beefaccesscontrol/DistributorRole.sol';
+import '../beefaccesscontrol/RetailerRole.sol';
+import '../beefaccesscontrol/ConsumerRole.sol';
+
 // Define a contract 'Supplychain'
-contract SupplyChain {
+contract SupplyChain is Ownable, FarmerRole, ProcessorRole, GraderRole, DistributorRole, RetailerRole, ConsumerRole {
 
   // Define 'owner'
   address payable owner;
@@ -61,23 +70,23 @@ contract SupplyChain {
   event BoughtRetail(uint cowID);
 
   // Define a modifer that checks to see if msg.sender == owner of the contract
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
+  // modifier onlyOwner() {
+  //   require(msg.sender == owner);
+  //   _;
+  // }
 
   // Define a modifer that verifies the Caller
   modifier verifyCaller (address _address) {
-    require(msg.sender == _address); 
+    require(msg.sender == _address, "Invalid caller");
     _;
   }
 
   // Define a modifier that checks if the paid amount is sufficient to cover the price
-  modifier paidEnough(uint _price) { 
-    require(msg.value >= _price); 
+  modifier paidEnough(uint _price) {
+    require(msg.value >= _price, "Insufficient funds");
     _;
   }
-  
+
   // Define a modifier that checks the wholesale price and refunds the remaining balance
   modifier checkWholesaleValue(uint _cowID) {
     _;
@@ -96,61 +105,61 @@ contract SupplyChain {
 
   // Define a modifier that checks if an item.state of a cowID is Raised
   modifier raised(uint _cowID) {
-    require(items[_cowID].itemState == State.Raised);
+    require(items[_cowID].itemState == State.Raised, "Not raised");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is Slaughtered
   modifier slaughtered(uint _cowID) {
-    require(items[_cowID].itemState == State.Slaughtered);
+    require(items[_cowID].itemState == State.Slaughtered, "Not slaughtered");
     _;
   }
-  
+
   // Define a modifier that checks if an item.state of a cowID is Split
   modifier split(uint _cowID) {
-    require(items[_cowID].itemState == State.Split);
+    require(items[_cowID].itemState == State.Split, "Not split");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is Cleaned
   modifier cleaned(uint _cowID) {
-    require(items[_cowID].itemState == State.Cleaned);
+    require(items[_cowID].itemState == State.Cleaned, "Not cleaned");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is Graded
   modifier graded(uint _cowID) {
-    require(items[_cowID].itemState == State.Graded);
+    require(items[_cowID].itemState == State.Graded, "Not graded");
     _;
   }
-  
+
   // Define a modifier that checks if an item.state of a cowID is For Sale Wholesale
   modifier forSaleWholesale(uint _cowID) {
-    require(items[_cowID].itemState == State.ForSaleWholesale);
+    require(items[_cowID].itemState == State.ForSaleWholesale, "Not for sale wholesale");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is Bought Wholesale
   modifier boughtWholesale(uint _cowID) {
-    require(items[_cowID].itemState == State.BoughtWholesale);
+    require(items[_cowID].itemState == State.BoughtWholesale, "Not bought wholesale");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is Shipped
   modifier shipped(uint _cowID) {
-    require(items[_cowID].itemState == State.Shipped);
+    require(items[_cowID].itemState == State.Shipped, "Not shipped");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is For Sale Retail
   modifier forSaleRetail(uint _cowID) {
-    require(items[_cowID].itemState == State.ForSaleRetail);
+    require(items[_cowID].itemState == State.ForSaleRetail, "Not for sale retail");
     _;
   }
 
   // Define a modifier that checks if an item.state of a cowID is Bought Retail
   modifier boughtRetail(uint _cowID) {
-    require(items[_cowID].itemState == State.BoughtRetail);
+    require(items[_cowID].itemState == State.BoughtRetail, "Not bought retail");
     _;
   }
 
@@ -162,20 +171,19 @@ contract SupplyChain {
   }
 
   // Define a function 'kill' if required
-  function kill() public {
-    if (msg.sender == owner) {
-      selfdestruct(owner);
-    }
+  function kill() public onlyOwner() {
+    selfdestruct(owner);
   }
 
   // Define a function 'raiseCow' that allows a farmer to mark an cow 'Raised'
-  function raiseCow(uint _cowID, address payable _originFarmerID, string memory _originFarmName) public
+  function raiseCow(uint _cowID, string memory _originFarmName) public
+  onlyFarmer()
   {
     // Add the new item as part of Harvest
     Item storage thisItem = items[_cowID];
     thisItem.cowID = _cowID;
-    thisItem.ownerID = _originFarmerID;
-    thisItem.originFarmerID = _originFarmerID;
+    thisItem.ownerID = msg.sender;
+    thisItem.originFarmerID = msg.sender;
     thisItem.originFarmName = _originFarmName;
     thisItem.itemState = State.Raised;
 
@@ -186,6 +194,7 @@ contract SupplyChain {
   // Define a function 'slaughterCow' that allows a processor to mark an item 'Slaughtered'
   function slaughterCow(uint _cowID) public
   // Call modifier to check if cowID has passed previous supply chain stage
+  onlyProcessor()
   raised(_cowID) {
     // Update the appropriate fields
     Item storage thisItem = items[_cowID];
@@ -198,6 +207,7 @@ contract SupplyChain {
   // Define a function 'splitCow' that allows a processor to mark an item 'Split'
   function splitCow(uint _cowID) public
   // Call modifier to check if cowID has passed previous supply chain stage
+  onlyProcessor()
   slaughtered(_cowID)
   // Call modifier to verify caller of this function
   verifyCaller(items[_cowID].processorID) {
@@ -211,6 +221,7 @@ contract SupplyChain {
   // Define a function 'cleanCow' that allows a processor to mark an item 'Cleaned'
   function cleanCow(uint _cowID) public
   // Call modifier to check if cowID has passed previous supply chain stage
+  onlyProcessor()
   split(_cowID)
   // Call modifier to verify caller of this function
   verifyCaller(items[_cowID].processorID) {
@@ -224,6 +235,7 @@ contract SupplyChain {
   // Define a function 'gradeCow' that allows a grader to mark an item 'Graded'
   function gradeCow(uint _cowID) public
   // Call modifier to check if cowID has passed previous supply chain stage
+  onlyGrader()
   cleaned(_cowID) {
     // Update the appropriate fields
     Item storage thisItem = items[_cowID];
@@ -236,6 +248,7 @@ contract SupplyChain {
   // Define a function 'packItem' that allows a farmer to mark an item 'Packed'
   function sellWholesale(uint _cowID, uint _price) public
   // Call modifier to check if cowID has passed previous supply chain stage
+  onlyFarmer()
   graded(_cowID)
   // Call modifier to verify caller of this function
   verifyCaller(items[_cowID].originFarmerID) {
@@ -250,6 +263,7 @@ contract SupplyChain {
   // Define a function 'buyWholesale' that allows a distributor to buy from the farmer
   function buyWholesale(uint _cowID) public payable
     // Call modifier to check if cowID has passed previous supply chain stage
+    onlyDistributor()
     forSaleWholesale(_cowID)
     // Call modifer to check if buyer has paid enough
     paidEnough(items[_cowID].wholesalePrice)
@@ -273,6 +287,7 @@ contract SupplyChain {
   // Define a function 'shipBeef' that allows the distributor to mark an item 'Shipped'
   function shipBeef(uint _cowID) public
     // Call modifier to check if cowID has passed previous supply chain stage
+    onlyDistributor()
     boughtWholesale(_cowID)
     // Call modifier to verify caller of this function
     verifyCaller(items[_cowID].distributorID) {
@@ -286,6 +301,7 @@ contract SupplyChain {
   // Define a function 'sellRetail' that allows the retailer to mark an item 'For Sale Retail'
   function sellRetail(uint _cowID, uint _price) public
     // Call modifier to check if cowID has passed previous supply chain stage
+    onlyRetailer()
     shipped(_cowID)
     // Access Control List enforced by calling Smart Contract / DApp
     {
@@ -303,6 +319,7 @@ contract SupplyChain {
   // Use the above modifiers to check if the item is received
   function buyRetail(uint _cowID) public payable
     // Call modifier to check if cowID has passed previous supply chain stage
+    onlyConsumer()
     forSaleRetail(_cowID)
     // Call modifer to check if buyer has paid enough
     paidEnough(items[_cowID].retailPrice)
